@@ -57,7 +57,9 @@ class Plan2Explore(Dreamer):
         if len(self.buffer) < 1:
             self.environment_interaction(self.intrinsic_actor, env, self.config.seed_episodes)
 
-        for iteration in range(self.config.train_iterations):
+        pbar = tqdm(range(self.config.train_iterations))
+        for iteration in pbar:
+            pbar.set_description("[iter {}:train]".format(iteration + 1))
             for collect_interval in range(self.config.collect_interval):
                 data = self.buffer.sample(self.config.batch_size, self.config.batch_length)
                 posteriors, deterministics = self.dynamic_learning(data)
@@ -79,14 +81,18 @@ class Plan2Explore(Dreamer):
                     deterministics,
                 )
 
-            self.environment_interaction(self.intrinsic_actor, env, self.config.num_interaction_episodes)
-            self.evaluate(self.actor, env)
+            pbar.set_description("[iter {}:interaction]".format(iteration + 1))
+            _ = self.environment_interaction(self.intrinsic_actor, env, self.config.num_interaction_episodes)
+            pbar.set_description("[iter {}:eval]".format(iteration + 1))
+            score = self.evaluate(self.actor, env)
+            pbar.set_postfix(dict(evaluate_score=score))
 
             if save_model and (iteration + 1) % self.config.num_checkpoints == 0:
                 self.save_model(iteration + 1)
 
     def evaluate(self, actor, env):
-        self.environment_interaction(actor, env, self.config.num_evaluate, train=False)
+        score = self.environment_interaction(actor, env, self.config.num_evaluate, train=False)
+        return score
 
     def dynamic_learning(self, data):
         prior, deterministic = self.rssm.recurrent_model_input_init(len(data.action))
@@ -302,9 +308,11 @@ class Plan2Explore(Dreamer):
                     break
         if not train:
             evaluate_score = score_lst.mean()
-            print("evaluate score : ", evaluate_score)
+            # print("evaluate score : ", evaluate_score)
             self.writer.add_scalar("test score", evaluate_score, self.num_total_episode)
-        # return evaluate_score
+        else:
+            evaluate_score = None
+        return evaluate_score
 
     @torch.no_grad()
     def validation_interaction(self, actor, env, num_interaction_episodes):
