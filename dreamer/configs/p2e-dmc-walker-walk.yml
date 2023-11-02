@@ -1,9 +1,10 @@
 algorithm : plan2explore
 
 operation :
-    save : False
+    save : True
     log_dir : batch-15-walker-walk
-    device : cuda
+    device : cuda:5
+    wandb : True
 environment :
     benchmark : dmc
     domain_name : walker
@@ -27,6 +28,7 @@ parameters :
             num_layers : 4
     dreamer :
         train_iterations : 4000
+        num_checkpoints : 500
         horizon_length : 15
         batch_size : 15
         batch_length : 50
