@@ -88,7 +88,7 @@ class Plan2Explore(Dreamer):
             pbar.set_postfix(dict(evaluate_score=score))
 
             if save_model and (iteration + 1) % self.config.num_checkpoints == 0:
-                self.save_model(iteration + 1)
+                self.save_model(iteration + 1, display=True)
 
     def evaluate(self, actor, env):
         score = self.environment_interaction(actor, env, self.config.num_evaluate, train=False)
@@ -367,7 +367,7 @@ class Plan2Explore(Dreamer):
             os.makedirs(save_dir)
         return os.path.join(save_dir, "plan2explore_" + str(itr) + ".pth")
 
-    def save_model(self, itr: int):
+    def save_model(self, itr: int, display=False):
         state_dicts = dict(
             rssm_state_dict=self.rssm.state_dict(),
             encoder_state_dict=self.encoder.state_dict(),
@@ -390,6 +390,8 @@ class Plan2Explore(Dreamer):
 
         path = self.generate_model_path(itr)
         torch.save(state_dicts, path)
+        if display:
+            print("save model : {}".format(path))
 
     def load_model(self, path: str):
         checkpoint = torch.load(path, map_location=self.device)
